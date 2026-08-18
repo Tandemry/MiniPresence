@@ -1,4 +1,4 @@
-<img width="1746" height="434" alt="Miniprestexto" src="https://github.com/user-attachments/assets/953e5e35-25ae-495e-90db-bfe7f2a70f48" />
+<img width="1746" height="434" alt="Miniprestexto1" src="https://github.com/user-attachments/assets/da668690-e8a1-4f55-ab74-f8b47ff5e4db" />
 
 MiniPresence is an incredibly small Windows app that shows a custom Discord Rich Presence while a chosen app
 is open. That's literally it.
