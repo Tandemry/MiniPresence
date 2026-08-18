@@ -5,11 +5,12 @@ import time
 from collections.abc import Callable
 
 from minipresence.config import MINIPRESENCE_CLIENT_ID, Settings
-from minipresence.detector import is_process_running, is_web_app_running
+from minipresence.detector import is_process_foreground, is_web_app_foreground
 from minipresence.rpc import DiscordPresence
 
 StatusCallback = Callable[[str, str], None]
 PRESENCE_REFRESH_SECONDS = 15.0
+FOREGROUND_POLL_SECONDS = 1.0
 
 
 def presence_update_due(
@@ -58,9 +59,13 @@ class PresenceMonitor:
         while not self._stop_event.is_set():
             try:
                 if settings.target_type == "process":
-                    detected = is_process_running(settings.process_name)
+                    detected = is_process_foreground(settings.process_name)
                 else:
-                    detected = is_web_app_running(settings.pwa_app_id, settings.browser)
+                    detected = is_web_app_foreground(
+                        settings.pwa_app_id,
+                        settings.browser,
+                        settings.app_name,
+                    )
                 now = time.monotonic()
                 if detected and presence_update_due(active, last_update, now):
                     if not started_at:
@@ -86,7 +91,7 @@ class PresenceMonitor:
                 self._rpc.close()
                 self._emit("error", "Discord isn't connected")
 
-            self._stop_event.wait(settings.poll_seconds)
+            self._stop_event.wait(min(settings.poll_seconds, FOREGROUND_POLL_SECONDS))
 
         self._rpc.close()
         self._emit("stopped", "Monitoring stopped")

@@ -305,6 +305,134 @@ def available_apps() -> list[AppChoice]:
     return sorted([*web_apps, *desktop_apps], key=lambda item: item.name.casefold())
 
 
+def _process_app_user_model_id(process_id: int) -> str:
+    """Return the Windows app identity for a process when one is available."""
+    if sys.platform != "win32" or process_id <= 0:
+        return ""
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    kernel32.GetApplicationUserModelId.argtypes = [
+        wintypes.HANDLE,
+        ctypes.POINTER(wintypes.UINT),
+        wintypes.LPWSTR,
+    ]
+    kernel32.GetApplicationUserModelId.restype = wintypes.LONG
+
+    process = kernel32.OpenProcess(0x1000, False, process_id)
+    if not process:
+        return ""
+    try:
+        length = wintypes.UINT()
+        kernel32.GetApplicationUserModelId(process, ctypes.byref(length), None)
+        if length.value <= 1:
+            return ""
+        buffer = ctypes.create_unicode_buffer(length.value)
+        if kernel32.GetApplicationUserModelId(process, ctypes.byref(length), buffer) != 0:
+            return ""
+        return buffer.value
+    finally:
+        kernel32.CloseHandle(process)
+
+
+def _foreground_window_record() -> dict[str, object] | None:
+    """Describe the active, visible Windows window or return ``None``."""
+    if sys.platform != "win32":
+        return None
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.GetForegroundWindow.restype = wintypes.HWND
+    user32.IsWindowVisible.argtypes = [wintypes.HWND]
+    user32.IsWindowVisible.restype = wintypes.BOOL
+    user32.IsIconic.argtypes = [wintypes.HWND]
+    user32.IsIconic.restype = wintypes.BOOL
+    user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+    user32.GetWindowTextLengthW.restype = ctypes.c_int
+    user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user32.GetWindowTextW.restype = ctypes.c_int
+    user32.GetWindowThreadProcessId.argtypes = [
+        wintypes.HWND,
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+
+    window = user32.GetForegroundWindow()
+    if not window or not user32.IsWindowVisible(window) or user32.IsIconic(window):
+        return None
+
+    process_id = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(window, ctypes.byref(process_id))
+    if not process_id.value or process_id.value == os.getpid():
+        return None
+
+    length = user32.GetWindowTextLengthW(window)
+    buffer = ctypes.create_unicode_buffer(length + 1)
+    if length:
+        user32.GetWindowTextW(window, buffer, length + 1)
+
+    try:
+        process_name = psutil.Process(process_id.value).name()
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        return None
+
+    return {
+        "process_id": process_id.value,
+        "title": buffer.value.strip(),
+        "process_name": process_name,
+    }
+
+
+def is_process_foreground(process_name: str) -> bool:
+    """Return whether the selected desktop program owns the active window."""
+    wanted = process_name.strip().casefold()
+    record = _foreground_window_record()
+    return bool(
+        wanted
+        and record
+        and str(record.get("process_name") or "").strip().casefold() == wanted
+    )
+
+
+def is_web_app_foreground(app_id: str, browser: str = "Any", app_name: str = "") -> bool:
+    """Return whether the selected installed web app owns the active window."""
+    wanted_id = app_id.strip().casefold()
+    record = _foreground_window_record()
+    if not wanted_id or not record:
+        return False
+
+    process_name = str(record.get("process_name") or "")
+    active_browser = browser_for_process(process_name)
+    if not active_browser or (browser != "Any" and active_browser != browser):
+        return False
+
+    process_id = int(record.get("process_id") or 0)
+    app_identity = str(
+        record.get("app_user_model_id") or _process_app_user_model_id(process_id)
+    ).casefold()
+    if wanted_id in app_identity:
+        return True
+
+    command_line = record.get("command_line") or []
+    if not command_line and process_id:
+        try:
+            command_line = psutil.Process(process_id).cmdline()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            command_line = []
+    if isinstance(command_line, (str, list, tuple)):
+        foreground_id = extract_pwa_app_id(command_line)
+        if foreground_id and foreground_id.casefold() == wanted_id:
+            return True
+
+    # Some Chromium versions do not expose a PWA identity on the window process.
+    # In that case, the installed app's saved display name is the safest fallback.
+    wanted_name = app_name.strip().casefold()
+    title = str(record.get("title") or "").strip().casefold()
+    return bool(wanted_name and wanted_name in title)
+
+
 def is_web_app_running(app_id: str, browser: str = "Any") -> bool:
     wanted = app_id.strip().lower()
     return any(
