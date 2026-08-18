@@ -1,60 +1,22 @@
-# MiniPresence
+<img width="1746" height="434" alt="Miniprestexto" src="https://github.com/user-attachments/assets/953e5e35-25ae-495e-90db-bfe7f2a70f48" />
 
-MiniPresence is a small Windows app that shows a custom Discord Rich Presence while a chosen app
-is open. It supports ordinary desktop programs as well as Edge and Chrome installed web apps, and
+MiniPresence is an incredibly small Windows app that shows a custom Discord Rich Presence while a chosen app
+is open. That's literally it.
+
+It supports ordinary desktop programs as well as Edge and Chrome installed web apps, and
 works with both the standard Discord desktop client and Discord Canary.
-
-The packaged executable, app window, and notification-area icon use the MiniPresence artwork.
-The compact 480-by-450 interface uses a cohesive dark theme with coral controls, searchable app
-selection, clear connection states, and an inline Discord status preview.
-
-No Discord password, user token, Application ID, or bot token is requested. MiniPresence uses its
-shared Discord application identity and talks to the Discord desktop client through its local Rich
-Presence connection.
 
 ## Download
 
 Download the latest `MiniPresence-*-windows-x64.zip` from the repository's **Releases** page,
-extract it, and run `MiniPresence.exe`. Windows SmartScreen may show a warning for an unsigned,
-newly published executable; review the source or build it yourself if preferred.
+extract it, and run `MiniPresence.exe`.
 
-## Set up Discord
+## Set up 
 
 Keep Discord or Discord Canary running and make sure activity sharing is enabled in Discord. That
-is all: MiniPresence includes the project-owned Discord Application ID, so users do not create a
-Discord developer application or link an account.
+is all you need to do.
 
-## Choose an app
-
-1. Open the desktop program or installed web app you want to share.
-2. Open MiniPresence and select **Choose app**.
-3. Choose it by its normal name and select **Start**.
-
-The chooser shows apps that are currently open. There are no process names, web app IDs, or other
-technical details to enter. MiniPresence remembers the selection across launches; the next time it
-opens, it immediately resumes watching for the saved app.
-
-Known apps can also use their own public artwork in Discord. Volute Dashboard automatically uses
-its supplied dashboard logo as the large Rich Presence image.
-
-Enable **Start MiniPresence with Windows** to launch it quietly in the notification area after
-sign-in. It automatically watches for the saved app and updates Discord whenever that app opens.
-Use the notification-area icon to reopen or quit MiniPresence. The optional **Customize status**
-screen changes the two lines shown on Discord; `{app_name}` inserts the selected app's name.
-
-## Current scope
-
-- Windows 10/11
-- Currently open Windows desktop apps
-- Microsoft Edge and Google Chrome installed web apps
-- Discord desktop and Discord Canary
-- One saved app at a time
-- Optional background startup and notification-area control
-- Automatic Discord reconnection and lightweight background monitoring
-
-Desktop apps are identified by their program, so multiple windows from the same program count as
-one app. Installed Edge and Chrome web apps are identified separately when possible. Multiple
-profiles, page-by-page presence changes, and code signing are possible follow-up features.
+It is designed with simplicity in mind, so everything you encounter is mostly self-explanatory; its quite easy to figure it out.
 
 ## Build from source
 
