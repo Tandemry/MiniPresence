@@ -11,6 +11,8 @@ from minipresence.detector import (
     discover_installed_web_apps,
     discover_web_apps,
     extract_pwa_app_id,
+    is_process_foreground,
+    is_web_app_foreground,
     match_running_web_apps,
 )
 
@@ -105,3 +107,49 @@ def test_installed_web_app_discovery_is_cached_and_returns_copies(monkeypatch):
         assert second == [WebAppChoice("Portal", "abc", "Edge")]
     finally:
         detector._cached_installed_web_apps.cache_clear()
+
+
+def test_desktop_presence_only_matches_the_foreground_process(monkeypatch):
+    monkeypatch.setattr(
+        detector,
+        "_foreground_window_record",
+        lambda: {"process_name": "notepad.exe", "title": "Notes"},
+    )
+    assert is_process_foreground("NOTEPAD.EXE")
+    assert not is_process_foreground("spotify.exe")
+
+
+def test_minimized_or_missing_foreground_window_is_inactive(monkeypatch):
+    monkeypatch.setattr(detector, "_foreground_window_record", lambda: None)
+    assert not is_process_foreground("notepad.exe")
+    assert not is_web_app_foreground("abc123", "Edge", "Portal")
+
+
+def test_web_app_foreground_matches_windows_app_identity(monkeypatch):
+    monkeypatch.setattr(
+        detector,
+        "_foreground_window_record",
+        lambda: {
+            "process_name": "msedge.exe",
+            "title": "Dashboard",
+            "command_line": ["msedge.exe"],
+            "app_user_model_id": "MSEdge._crx_abc123",
+        },
+    )
+    assert is_web_app_foreground("abc123", "Edge", "Portal")
+    assert not is_web_app_foreground("different", "Edge", "Portal")
+
+
+def test_web_app_foreground_uses_command_line_or_title_fallback(monkeypatch):
+    record = {
+        "process_name": "chrome.exe",
+        "title": "Volute Dashboard",
+        "command_line": ["chrome.exe", "--app-id=volute123"],
+        "app_user_model_id": "",
+    }
+    monkeypatch.setattr(detector, "_foreground_window_record", lambda: record)
+    assert is_web_app_foreground("volute123", "Chrome", "Other name")
+
+    record["command_line"] = ["chrome.exe"]
+    assert is_web_app_foreground("volute123", "Chrome", "Volute Dashboard")
+    assert not is_web_app_foreground("volute123", "Edge", "Volute Dashboard")

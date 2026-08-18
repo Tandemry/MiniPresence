@@ -6,6 +6,10 @@ is open. That's literally it.
 It supports ordinary desktop programs as well as Edge and Chrome installed web apps, and
 works with both the standard Discord desktop client and Discord Canary.
 
+Presence is shown only while the selected app owns the active, visible window. Switching to
+another app or minimizing the selected app clears the presence; returning to it restores the
+presence automatically.
+
 ## Download
 
 Download the latest `MiniPresence-*-windows-x64.zip` from the repository's **Releases** page,
