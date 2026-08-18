@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minipresence"
+version = "1.0.0"
+description = "Simple Discord Rich Presence for Windows apps"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "MiniPresence contributors" }]
+dependencies = [
+  "customtkinter>=5.2,<6",
+  "Pillow>=11,<13",
+  "psutil>=6.0,<8",
+  "pystray>=0.19,<1",
+  "pypresence>=4.6.2,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pyinstaller>=6.21,<7",
+  "pytest>=8,<9",
+  "ruff>=0.12,<1",
+]
+
+[project.gui-scripts]
+minipresence = "minipresence.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+minipresence = ["assets/*.ico", "assets/*.png"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

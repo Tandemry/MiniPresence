@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.test-temp/
+pytest-cache-files-*/
+.venv/
+build/
+dist/
+work/
+outputs/
+design-reference/
+*.spec
+config.json
+MiniPresence-*.zip
